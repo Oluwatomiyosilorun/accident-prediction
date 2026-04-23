@@ -18,6 +18,13 @@ st.set_page_config(page_title="Accident Risk Prediction — FUOYE",
 MODELS_DIR  = os.path.join(os.path.dirname(__file__), 'models')
 RESULTS_DIR = os.path.join(os.path.dirname(__file__), 'results')
 
+def _safe_load(path):
+    """Load a pickle/joblib file, return None if missing."""
+    try:
+        return joblib.load(path)
+    except Exception:
+        return None
+
 @st.cache_resource
 def load_artifacts():
     rf      = joblib.load(f'{MODELS_DIR}/random_forest.pkl')
@@ -27,16 +34,16 @@ def load_artifacts():
     feats   = joblib.load(f'{MODELS_DIR}/feature_names.pkl')
     results = pd.read_csv(f'{RESULTS_DIR}/model_results.csv')
     fi      = pd.read_csv(f'{RESULTS_DIR}/feature_importance.csv')
-    preds   = joblib.load(f'{RESULTS_DIR}/predictions.pkl')
-    cm_rf   = joblib.load(f'{RESULTS_DIR}/cm_rf.pkl')
-    cm_ann  = joblib.load(f'{RESULTS_DIR}/cm_ann.pkl')
-    history = joblib.load(f'{MODELS_DIR}/ann_history.pkl')
+    preds   = _safe_load(f'{RESULTS_DIR}/predictions.pkl')
+    cm_rf   = _safe_load(f'{RESULTS_DIR}/cm_rf.pkl')
+    cm_ann  = _safe_load(f'{RESULTS_DIR}/cm_ann.pkl')
+    history = _safe_load(f'{MODELS_DIR}/ann_history.pkl')
     return rf, scaler, le_road, le_wea, feats, results, fi, preds, cm_rf, cm_ann, history
 
 try:
-    import tensorflow as tf; tf.get_logger().setLevel('ERROR')
-    from tensorflow.keras.models import load_model
-    ann = load_model(f'{MODELS_DIR}/ann_model.keras', compile=False)
+    import onnxruntime as ort
+    _ann_sess = ort.InferenceSession(f'{MODELS_DIR}/ann_model.onnx')
+    _ann_input_name = _ann_sess.get_inputs()[0].name
     ann_loaded = True
 except Exception:
     ann_loaded = False
@@ -251,7 +258,7 @@ elif page == "🔮 Risk Prediction":
         inp_sc = scaler.transform(inp)
 
         if model_choice == "ANN" and ann_loaded:
-            proba      = ann.predict(inp_sc, verbose=0)[0]
+            proba      = _ann_sess.run(None, {_ann_input_name: inp_sc.astype(np.float32)})[0][0]
             pred_class = int(np.argmax(proba))
             model_used = "ANN (Neural Network)"
         else:
@@ -331,6 +338,9 @@ elif page == "📈 Traffic Flow Analysis":
     )
     st.divider()
 
+    if preds is None:
+        st.warning("Prediction data not available. Please re-run train_models.py to regenerate results.")
+        st.stop()
     y_test  = preds['y_test']
     rf_pred = preds['rf_pred']
     rf_row  = results_df[results_df['Model'] == 'Random Forest'].iloc[0]
@@ -486,25 +496,31 @@ elif page == "📊 Model Evaluation":
     c1, c2 = st.columns(2)
     with c1:
         st.markdown("#### 🌲 Random Forest")
-        fig, ax = plt.subplots(figsize=(6, 4.5))
-        sns.heatmap(cm_rf, annot=True, fmt='d', cmap='Blues', ax=ax,
-                    xticklabels=LABELS, yticklabels=LABELS, linewidths=0.5)
-        ax.set_title('Confusion Matrix — Random Forest', fontsize=11, fontweight='bold')
-        ax.set_ylabel('Actual Risk Level', fontsize=9)
-        ax.set_xlabel('Predicted Risk Level', fontsize=9)
-        plt.tight_layout(); st.pyplot(fig); plt.close()
-        st.caption("Numbers on the diagonal = correctly identified cases. Numbers off-diagonal = misclassifications.")
+        if cm_rf is not None:
+            fig, ax = plt.subplots(figsize=(6, 4.5))
+            sns.heatmap(cm_rf, annot=True, fmt='d', cmap='Blues', ax=ax,
+                        xticklabels=LABELS, yticklabels=LABELS, linewidths=0.5)
+            ax.set_title('Confusion Matrix — Random Forest', fontsize=11, fontweight='bold')
+            ax.set_ylabel('Actual Risk Level', fontsize=9)
+            ax.set_xlabel('Predicted Risk Level', fontsize=9)
+            plt.tight_layout(); st.pyplot(fig); plt.close()
+            st.caption("Numbers on the diagonal = correctly identified cases. Numbers off-diagonal = misclassifications.")
+        else:
+            st.info("Confusion matrix data not available.")
 
     with c2:
         st.markdown("#### 🧠 ANN (Neural Network)")
-        fig, ax = plt.subplots(figsize=(6, 4.5))
-        sns.heatmap(cm_ann, annot=True, fmt='d', cmap='Greens', ax=ax,
-                    xticklabels=LABELS, yticklabels=LABELS, linewidths=0.5)
-        ax.set_title('Confusion Matrix — ANN', fontsize=11, fontweight='bold')
-        ax.set_ylabel('Actual Risk Level', fontsize=9)
-        ax.set_xlabel('Predicted Risk Level', fontsize=9)
-        plt.tight_layout(); st.pyplot(fig); plt.close()
-        st.caption("Numbers on the diagonal = correctly identified cases. Numbers off-diagonal = misclassifications.")
+        if cm_ann is not None:
+            fig, ax = plt.subplots(figsize=(6, 4.5))
+            sns.heatmap(cm_ann, annot=True, fmt='d', cmap='Greens', ax=ax,
+                        xticklabels=LABELS, yticklabels=LABELS, linewidths=0.5)
+            ax.set_title('Confusion Matrix — ANN', fontsize=11, fontweight='bold')
+            ax.set_ylabel('Actual Risk Level', fontsize=9)
+            ax.set_xlabel('Predicted Risk Level', fontsize=9)
+            plt.tight_layout(); st.pyplot(fig); plt.close()
+            st.caption("Numbers on the diagonal = correctly identified cases. Numbers off-diagonal = misclassifications.")
+        else:
+            st.info("ANN confusion matrix data not available.")
 
     st.divider()
 
@@ -515,19 +531,22 @@ elif page == "📊 Model Evaluation":
         "A model that is learning well shows both training and validation lines moving together — "
         "accuracy increasing and loss decreasing — without one line pulling away from the other."
     )
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4.5))
-    ax1.plot(ann_history['accuracy'],     color='#2E75B6', lw=2, label='Training')
-    ax1.plot(ann_history['val_accuracy'], color='#C00000', lw=2, ls='--', label='Validation')
-    ax1.set_title('Accuracy per Training Epoch', fontsize=11, fontweight='bold')
-    ax1.set_xlabel('Epoch (training round)'); ax1.set_ylabel('Accuracy'); ax1.legend()
-    ax1.yaxis.grid(True, linestyle='--', alpha=0.5)
+    if ann_history is not None:
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4.5))
+        ax1.plot(ann_history['accuracy'],     color='#2E75B6', lw=2, label='Training')
+        ax1.plot(ann_history['val_accuracy'], color='#C00000', lw=2, ls='--', label='Validation')
+        ax1.set_title('Accuracy per Training Epoch', fontsize=11, fontweight='bold')
+        ax1.set_xlabel('Epoch (training round)'); ax1.set_ylabel('Accuracy'); ax1.legend()
+        ax1.yaxis.grid(True, linestyle='--', alpha=0.5)
 
-    ax2.plot(ann_history['loss'],     color='#2E75B6', lw=2, label='Training')
-    ax2.plot(ann_history['val_loss'], color='#C00000', lw=2, ls='--', label='Validation')
-    ax2.set_title('Loss per Training Epoch', fontsize=11, fontweight='bold')
-    ax2.set_xlabel('Epoch (training round)'); ax2.set_ylabel('Loss (lower = better)'); ax2.legend()
-    ax2.yaxis.grid(True, linestyle='--', alpha=0.5)
-    plt.tight_layout(); st.pyplot(fig); plt.close()
+        ax2.plot(ann_history['loss'],     color='#2E75B6', lw=2, label='Training')
+        ax2.plot(ann_history['val_loss'], color='#C00000', lw=2, ls='--', label='Validation')
+        ax2.set_title('Loss per Training Epoch', fontsize=11, fontweight='bold')
+        ax2.set_xlabel('Epoch (training round)'); ax2.set_ylabel('Loss (lower = better)'); ax2.legend()
+        ax2.yaxis.grid(True, linestyle='--', alpha=0.5)
+        plt.tight_layout(); st.pyplot(fig); plt.close()
+    else:
+        st.info("ANN training history not available.")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # PAGE 5 — ABOUT
