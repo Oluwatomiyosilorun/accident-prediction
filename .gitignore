@@ -1,0 +1,30 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Generated data files (recreate by running generate_data.py + train_models.py)
+data/traffic_data.csv
+data/raw_dataset.csv
+data/preprocessed.pkl
+
+# Large numpy test arrays (recreated on training)
+models/X_test.npy
+models/y_test.npy
+
+# Generated plot images (recreated on training)
+results/*.png
+
+# Intermediate result pickles (recreated on training)
+results/ann_done.pkl
+results/ann_results.pkl
+results/rf_done.pkl
+results/rf_results.pkl
+results/predictions.pkl
