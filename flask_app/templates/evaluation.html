@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Model Evaluation{% endblock %}
+
+{% block content %}
+<div class="container-xl px-4 py-5">
+
+  <div class="mb-4">
+    <h1 class="fw-bold mb-1"><i class="bi bi-clipboard-data-fill text-info me-2"></i>Model Evaluation Results</h1>
+    <p class="lead text-secondary">
+      Technical performance results for both machine learning models. These validate that the
+      system meets accuracy thresholds required for real-world deployment in Nigerian
+      traffic management stations.
+    </p>
+  </div>
+
+  <!-- Metrics table -->
+  <div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body p-4">
+      <h4 class="fw-bold mb-3">Performance Metrics Summary</h4>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr class="table-primary">
+              {% for col in metrics_cols %}
+              <th>{{ col }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in metrics_rows %}
+            <tr>
+              {% for col in metrics_cols %}
+              <td class="{% if col == 'Model' %}fw-semibold{% endif %}">{{ row[col] }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metric explainer accordion -->
+  <div class="accordion mb-5 shadow-sm" id="metricsAccordion">
+    <div class="accordion-item border-0 rounded-3 overflow-hidden">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed fw-semibold" type="button"
+                data-bs-toggle="collapse" data-bs-target="#metricsExplainer">
+          <i class="bi bi-question-circle-fill me-2 text-primary"></i>
+          What do these metrics mean? (Click to expand)
+        </button>
+      </h2>
+      <div id="metricsExplainer" class="accordion-collapse collapse" data-bs-parent="#metricsAccordion">
+        <div class="accordion-body">
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered">
+              <thead class="table-light">
+                <tr><th>Metric</th><th>What it measures</th><th>What's a good score?</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>Accuracy</strong></td><td>% of predictions that were correct overall</td><td>Higher is better. 76% means 76 out of 100 correct.</td></tr>
+                <tr><td><strong>Precision</strong></td><td>Of the times the model predicted High Risk, how often was it actually High Risk?</td><td>High precision = few false alarms</td></tr>
+                <tr><td><strong>Recall</strong></td><td>Of the actual High Risk situations, how many did the model catch?</td><td>High recall = few missed dangers</td></tr>
+                <tr><td><strong>F1-Score</strong></td><td>Balance between Precision and Recall</td><td>Closer to 1.0 is better</td></tr>
+                <tr><td><strong>ROC-AUC</strong></td><td>How well the model separates risk classes at all thresholds</td><td>&gt;0.85 is considered good</td></tr>
+                <tr><td><strong>MAE</strong></td><td>Average prediction error in class units</td><td>Lower is better</td></tr>
+                <tr><td><strong>RMSE</strong></td><td>Same as MAE but penalises large errors more heavily</td><td>Lower is better</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confusion matrices -->
+  <h4 class="fw-bold mb-2">Confusion Matrices</h4>
+  <p class="text-secondary mb-4">
+    A confusion matrix shows exactly where the model is getting predictions right or wrong.
+    The diagonal (top-left to bottom-right) shows correct predictions —
+    <strong>darker diagonal = better model.</strong>
+  </p>
+  <div class="row g-4 mb-5">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-body p-4">
+          <h5 class="fw-bold mb-3">🌲 Random Forest</h5>
+          {% if 'cm_rf' in charts %}
+          <img src="data:image/png;base64,{{ charts.cm_rf }}" class="img-fluid rounded" alt="RF Confusion Matrix">
+          <p class="small text-secondary mt-2 mb-0">
+            Numbers on the diagonal = correctly identified cases. Off-diagonal = misclassifications.
+          </p>
+          {% else %}
+          <div class="alert alert-secondary">Confusion matrix data not available.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-body p-4">
+          <h5 class="fw-bold mb-3">🧠 ANN (Neural Network)</h5>
+          {% if 'cm_ann' in charts %}
+          <img src="data:image/png;base64,{{ charts.cm_ann }}" class="img-fluid rounded" alt="ANN Confusion Matrix">
+          <p class="small text-secondary mt-2 mb-0">
+            Numbers on the diagonal = correctly identified cases. Off-diagonal = misclassifications.
+          </p>
+          {% else %}
+          <div class="alert alert-secondary">ANN confusion matrix data not available.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANN Learning curves -->
+  <div class="card border-0 shadow-sm rounded-4 mb-5">
+    <div class="card-body p-4">
+      <h4 class="fw-bold mb-2">ANN Learning Curves</h4>
+      <p class="text-secondary mb-3">
+        These charts show how the neural network improved during training. A model that is
+        learning well shows both training and validation lines moving together —
+        accuracy increasing and loss decreasing — without one line pulling away from the other.
+      </p>
+      {% if 'learning' in charts %}
+      <img src="data:image/png;base64,{{ charts.learning }}" class="img-fluid rounded" alt="ANN Learning Curves">
+      {% else %}
+      <div class="alert alert-secondary">ANN training history not available.</div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

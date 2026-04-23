@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}About{% endblock %}
+
+{% block content %}
+
+<!-- Page header — no hero image, just a clean title block -->
+<div style="background:var(--surface);border-bottom:1px solid var(--border);">
+  <div class="container-xl px-4 py-5">
+    <p class="section-label mb-2">Final Year Project · FUOYE · 2025</p>
+    <h1 class="fw-bold mb-2" style="font-size:clamp(1.8rem,3vw,2.6rem);letter-spacing:-0.03em;">
+      About This Project
+    </h1>
+    <p class="text-secondary mb-0" style="max-width:620px;font-size:1.05rem;">
+      Design and Implementation of Accident Risk Prediction and Traffic Flow Analysis
+      Using Machine Learning — by Azuh Toyosi Titilayo, Dept. of Computer Science, FUOYE.
+    </p>
+  </div>
+</div>
+
+<div class="container-xl px-4">
+
+  <!-- Project identity -->
+  <div class="row g-4 mb-5">
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-body p-4">
+          <h5 class="fw-bold text-primary mb-3"><i class="bi bi-person-fill me-2"></i>Project Details</h5>
+          <table class="table table-sm table-borderless mb-0">
+            <tr><th class="text-secondary" style="width:160px">Student</th><td>Azuh Toyosi Titilayo</td></tr>
+            <tr><th class="text-secondary">Matric No.</th><td>FTP/CSC/25/0134940</td></tr>
+            <tr><th class="text-secondary">Supervisor</th><td>Mr. Onadokun</td></tr>
+            <tr><th class="text-secondary">Department</th><td>Computer Science, FUOYE</td></tr>
+            <tr><th class="text-secondary">Year</th><td>2025</td></tr>
+            <tr><th class="text-secondary">Degree</th><td>B.Sc. Computer Science (Final Year)</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-4 h-100 bg-primary text-white">
+        <div class="card-body p-4 d-flex flex-column justify-content-center text-center">
+          <i class="bi bi-mortarboard-fill fs-1 mb-3"></i>
+          <div class="fw-bold fs-5">Federal University Oye-Ekiti</div>
+          <div class="text-white-75 small mt-1">Department of Computer Science</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Background -->
+  <div class="card border-0 shadow-sm rounded-4 mb-5">
+    <div class="card-body p-4 p-md-5">
+      <h4 class="fw-bold text-primary mb-3"><i class="bi bi-book-fill me-2"></i>Background</h4>
+      <p>
+        Urban traffic management in Nigeria faces a critical dual challenge: managing
+        escalating congestion while reducing the devastating toll of road accidents.
+        Nigeria's roads are among the most dangerous in the world — the Federal Road
+        Safety Corps (FRSC) recorded over <strong>13,000 road traffic crashes</strong> and more than
+        <strong>5,000 fatalities</strong> in a single year (FRSC, 2022). A significant proportion of these
+        incidents are preventable, occurring under predictable conditions such as wet weather,
+        peak traffic hours, and known accident blackspots.
+      </p>
+      <p>
+        A fundamental contributor to this crisis is the continued reliance on <strong>fixed-cycle
+        traffic signal systems</strong> throughout Nigerian urban centres. These systems operate on
+        predetermined time intervals that cannot adapt to real-time traffic conditions — a
+        phenomenon known in the literature as "dead time," where green signals are allocated
+        to empty lanes while congested lanes remain stationary (Eze et al., 2021).
+      </p>
+      <p class="mb-0">
+        This study addresses this gap by developing a machine learning system specifically
+        designed for the Nigerian urban context — capable of predicting accident risk levels
+        and analysing traffic flow patterns, and presenting its outputs through an accessible
+        dashboard that non-technical traffic officers can use directly.
+      </p>
+    </div>
+  </div>
+
+  <!-- Objectives -->
+  <div class="card border-0 shadow-sm rounded-4 mb-5">
+    <div class="card-body p-4">
+      <h4 class="fw-bold text-primary mb-3"><i class="bi bi-list-check me-2"></i>Research Objectives</h4>
+      <ol class="mb-0">
+        <li class="mb-2">Evaluate the limitations of existing fixed-time traffic management systems in Nigeria</li>
+        <li class="mb-2">Collect and preprocess a dataset combining historical accident records, weather data, and road characteristics</li>
+        <li class="mb-2">Develop and train Random Forest and ANN models capable of classifying accident risk (Low / Medium / High)</li>
+        <li class="mb-2">Design an interactive web dashboard that translates model outputs into actionable risk alerts</li>
+        <li>Evaluate and validate model performance using Accuracy, F1-Score, MAE, and RMSE</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- System architecture -->
+  <div class="card border-0 shadow-sm rounded-4 mb-5">
+    <div class="card-body p-4">
+      <h4 class="fw-bold text-primary mb-3"><i class="bi bi-diagram-3-fill me-2"></i>System Architecture</h4>
+      <p class="text-secondary mb-3">The system follows a <strong>three-tier architecture:</strong></p>
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+          <thead class="table-primary">
+            <tr><th>Layer</th><th>Components</th><th>Purpose</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Data Layer</strong></td>
+              <td>Kaggle US Accidents Dataset (adapted), SUMO simulation data</td>
+              <td>Training corpus representative of Nigerian urban conditions</td>
+            </tr>
+            <tr>
+              <td><strong>Processing / Modelling Layer</strong></td>
+              <td>Data preprocessing pipeline, Random Forest, ANN</td>
+              <td>Clean data, train models, generate predictions</td>
+            </tr>
+            <tr>
+              <td><strong>Presentation Layer</strong></td>
+              <td>Flask web dashboard (Bootstrap 5)</td>
+              <td>Display risk alerts and analysis to traffic operators</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dataset & Models -->
+  <div class="row g-4 mb-5">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-body p-4">
+          <h5 class="fw-bold text-primary mb-3"><i class="bi bi-database-fill me-2"></i>Dataset</h5>
+          <ul class="mb-0">
+            <li><strong>Primary:</strong> Kaggle US Accidents Dataset (adapted for Nigerian conditions)</li>
+            <li><strong>Supplementary:</strong> SUMO-simulated Nigerian traffic data (Lagos, Abuja, Port Harcourt)</li>
+            <li><strong>Training records:</strong> 15,000 &nbsp;|&nbsp; <strong>Features:</strong> 16</li>
+            <li><strong>Target classes:</strong> Low Risk · Medium Risk · High Risk</li>
+            <li><strong>Class balancing:</strong> SMOTE oversampling applied to training set</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-body p-4">
+          <h5 class="fw-bold text-primary mb-3"><i class="bi bi-cpu-fill me-2"></i>Models</h5>
+          <p class="mb-2"><strong>🌲 Random Forest</strong> — 200 decision trees, GridSearchCV optimised</p>
+          <ul class="small text-secondary mb-3">
+            <li>Accuracy: {{ rf_accuracy }}% &nbsp;|&nbsp; F1-Score: {{ rf_f1 }} &nbsp;|&nbsp; ROC-AUC: {{ rf_roc }}</li>
+          </ul>
+          <p class="mb-2"><strong>🧠 ANN (Neural Network)</strong> — 4-layer feedforward (128→64→32→3)</p>
+          <ul class="small text-secondary mb-0">
+            <li>Adam optimizer, EarlyStopping, up to 100 epochs</li>
+            <li>Accuracy: {{ ann_accuracy }}% &nbsp;|&nbsp; F1-Score: {{ ann_f1 }} &nbsp;|&nbsp; ROC-AUC: {{ ann_roc }}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Technology stack -->
+  <div class="card border-0 shadow-sm rounded-4 mb-5">
+    <div class="card-body p-4">
+      <h4 class="fw-bold text-primary mb-3"><i class="bi bi-stack me-2"></i>Technology Stack</h4>
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm">
+          <thead class="table-primary">
+            <tr><th>Tool</th><th>Role</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Python 3.11</strong></td><td>Core programming language</td></tr>
+            <tr><td><strong>Scikit-learn</strong></td><td>Random Forest, preprocessing pipeline, evaluation metrics</td></tr>
+            <tr><td><strong>TensorFlow / Keras</strong></td><td>ANN model training (converted to ONNX for deployment)</td></tr>
+            <tr><td><strong>ONNX Runtime</strong></td><td>Lightweight ANN inference at deployment — no TensorFlow needed</td></tr>
+            <tr><td><strong>Pandas &amp; NumPy</strong></td><td>Data manipulation and numerical computation</td></tr>
+            <tr><td><strong>Flask &amp; Bootstrap 5</strong></td><td>Web dashboard presentation layer</td></tr>
+            <tr><td><strong>SUMO 1.18</strong></td><td>Nigerian traffic simulation for supplementary data</td></tr>
+            <tr><td><strong>imbalanced-learn</strong></td><td>SMOTE class balancing</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Significance -->
+  <div class="card border-0 shadow-sm rounded-4 mb-5">
+    <div class="card-body p-4 p-md-5">
+      <h4 class="fw-bold text-primary mb-4"><i class="bi bi-star-fill me-2"></i>Significance</h4>
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="text-center p-3">
+            <i class="bi bi-person-badge-fill fs-1 text-primary mb-3 d-block"></i>
+            <h6 class="fw-bold">For Traffic Officers</h6>
+            <p class="text-secondary small mb-0">
+              Provides a practical tool to anticipate accident risk before incidents occur —
+              enabling pre-emptive actions such as deploying officers, adjusting signal timing,
+              and issuing motorist advisories.
+            </p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-center p-3">
+            <i class="bi bi-building-fill fs-1 text-info mb-3 d-block"></i>
+            <h6 class="fw-bold">For Policy Makers</h6>
+            <p class="text-secondary small mb-0">
+              Demonstrates the feasibility of data-driven traffic management within Nigerian
+              resource constraints — the system runs on a standard laptop, requiring no
+              expensive infrastructure.
+            </p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-center p-3">
+            <i class="bi bi-journal-text fs-1 text-success mb-3 d-block"></i>
+            <h6 class="fw-bold">For Research</h6>
+            <p class="text-secondary small mb-0">
+              Contributes a locally-adapted ML framework for accident prediction in a West
+              African urban context, addressing a gap where most models are trained exclusively
+              on data from developed nations.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

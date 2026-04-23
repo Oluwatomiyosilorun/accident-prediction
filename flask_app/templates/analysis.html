@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Traffic Flow Analysis{% endblock %}
+
+{% block content %}
+<!-- Plotly JS — served locally, no CDN needed -->
+<script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
+
+<div class="container-xl px-4 py-4">
+
+  <div class="mb-4">
+    <p class="section-label">Data Analysis</p>
+    <h1 class="fw-bold mb-1"><i class="bi bi-bar-chart-line-fill text-warning me-2"></i>Traffic Flow Analysis</h1>
+    <p class="lead text-secondary">
+      Patterns in the traffic dataset showing <em>when</em> and <em>under what conditions</em>
+      accident risk is highest — use these to plan patrol schedules and resource allocation.
+    </p>
+  </div>
+
+  {% if not preds_available %}
+  <div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    Prediction data not available. Please re-run <code>train_models.py</code>.
+  </div>
+  {% endif %}
+
+  <!-- Pie charts -->
+  {% if preds_available %}
+  <div class="row g-4 mb-4">
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-body p-4">
+          <h6 class="fw-bold text-secondary text-uppercase mb-1" style="font-size:0.72rem;letter-spacing:0.08em;">Ground Truth</h6>
+          <h5 class="fw-bold mb-2">Actual Risk Distribution</h5>
+          {{ charts.pie_actual | safe }}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-body p-4">
+          <h6 class="fw-bold text-secondary text-uppercase mb-1" style="font-size:0.72rem;letter-spacing:0.08em;">Model Output</h6>
+          <h5 class="fw-bold mb-2">Random Forest Predicted Distribution</h5>
+          {{ charts.pie_pred | safe }}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Model comparison -->
+  <div class="card mb-4">
+    <div class="card-body p-4">
+      <h6 class="fw-bold text-secondary text-uppercase mb-1" style="font-size:0.72rem;letter-spacing:0.08em;">Performance</h6>
+      <h5 class="fw-bold mb-1">Model Performance Comparison</h5>
+      <p class="text-secondary small mb-3">Higher bars = better performance. Maximum possible score is 1.0.</p>
+      {{ charts.comparison | safe }}
+    </div>
+  </div>
+
+  <!-- Feature importance + Errors -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-8">
+      <div class="card h-100">
+        <div class="card-body p-4">
+          <h6 class="fw-bold text-secondary text-uppercase mb-1" style="font-size:0.72rem;letter-spacing:0.08em;">Random Forest</h6>
+          <h5 class="fw-bold mb-1">Top Factors Driving Accident Risk</h5>
+          <p class="text-secondary small mb-2">Higher score = stronger influence on the prediction.</p>
+          {{ charts.importance | safe }}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-body p-4">
+          <h6 class="fw-bold text-secondary text-uppercase mb-1" style="font-size:0.72rem;letter-spacing:0.08em;">Error Analysis</h6>
+          <h5 class="fw-bold mb-1">Prediction Error</h5>
+          <p class="text-secondary small mb-2">Lower = more accurate.</p>
+          {{ charts.errors | safe }}
+          <div class="mt-2 p-3 rounded-3" style="background:var(--surface-2);">
+            <p class="small mb-1"><strong>MAE</strong> — average error per prediction</p>
+            <p class="small mb-0"><strong>RMSE</strong> — penalises large errors more</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert alert-primary mb-2">
+    <i class="bi bi-lightbulb-fill me-2"></i>
+    <strong>Key Insight:</strong> The top factors are weather-related (precipitation, visibility)
+    and temporal (hour, traffic volume). <strong>Rainy conditions during peak hours</strong>
+    represent the highest-risk scenario on Nigerian urban roads — consistent with FRSC accident data.
+  </div>
+
+</div>
+{% endblock %}

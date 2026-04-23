@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+{% block title %}Risk Prediction{% endblock %}
+
+{% block content %}
+<div class="container-xl px-4 py-4">
+
+  <div class="mb-4">
+    <p class="section-label">Machine Learning Prediction</p>
+    <h1 class="fw-bold mb-1">Real-Time Accident Risk Prediction</h1>
+    <p class="text-secondary">
+      Set the current road and weather conditions, then click <strong>Predict</strong>.
+      The result appears on the right.
+    </p>
+  </div>
+
+  <form method="POST" action="/prediction">
+  <div class="row g-4 align-items-start">
+
+    <!-- ── LEFT: Input form ───────────────────────────────────────── -->
+    <div class="col-lg-7">
+
+      <!-- Time & Date -->
+      <div class="card mb-3">
+        <div class="card-header bg-primary text-white">
+          <i class="bi bi-clock-fill me-2"></i>Time &amp; Date
+        </div>
+        <div class="card-body p-4">
+          <div class="row g-3">
+            <div class="col-md-5">
+              <label class="form-label fw-semibold small">Hour of Day
+                <span class="text-primary fw-bold ms-1" id="hourVal">{{ form_data.get('hour', 8) }}:00</span>
+              </label>
+              <input type="range" class="form-range" name="hour"
+                     min="0" max="23" value="{{ form_data.get('hour', 8) }}"
+                     oninput="document.getElementById('hourVal').textContent=this.value+':00';updateHourHint(this.value);">
+              <div id="hourHint" class="small mt-1"></div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold small">Day of Week</label>
+              <select class="form-select form-select-sm" name="day_num">
+                {% for d, n in [('Monday',0),('Tuesday',1),('Wednesday',2),('Thursday',3),('Friday',4),('Saturday',5),('Sunday',6)] %}
+                <option value="{{ n }}" {% if form_data.get('day_num','0')|int == n %}selected{% endif %}>{{ d }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold small">Month
+                <span class="text-primary fw-bold ms-1" id="monthVal">{{ form_data.get('month', 6) }}</span>
+              </label>
+              <input type="range" class="form-range" name="month"
+                     min="1" max="12" value="{{ form_data.get('month', 6) }}"
+                     oninput="document.getElementById('monthVal').textContent=this.value;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weather -->
+      <div class="card mb-3">
+        <div class="card-header text-white" style="background:linear-gradient(135deg,#0891b2,#0e7490);">
+          <i class="bi bi-cloud-rain-fill me-2"></i>Weather Conditions
+        </div>
+        <div class="card-body p-4">
+          <div class="row g-3">
+            {% for label, name, min, max, step, default, unit in [
+              ('Temperature','temperature',10,45,0.5,28,'°C'),
+              ('Humidity','humidity',30,100,1,75,'%'),
+              ('Precipitation','precipitation',0,30,0.5,0,'mm'),
+              ('Visibility','visibility',0.5,10,0.5,8,'km'),
+              ('Wind Speed','wind_speed',0,60,1,10,'km/h')
+            ] %}
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small d-flex justify-content-between mb-1">
+                {{ label }}
+                <span class="text-primary fw-bold" id="{{ name }}Val">
+                  {{ "%.1f"|format(form_data.get(name, default)|float) }}{{ unit }}
+                </span>
+              </label>
+              <input type="range" class="form-range" name="{{ name }}"
+                     min="{{ min }}" max="{{ max }}" step="{{ step }}"
+                     value="{{ form_data.get(name, default) }}"
+                     oninput="document.getElementById('{{ name }}Val').textContent=parseFloat(this.value).toFixed(1)+'{{ unit }}'{% if name=='precipitation' %};updateRainHint(this.value){% endif %}{% if name=='visibility' %};updateVisHint(this.value){% endif %}">
+            </div>
+            {% endfor %}
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">Weather Condition</label>
+              <select class="form-select form-select-sm" name="weather_cond">
+                {% for w in weather_types %}
+                <option value="{{ w }}" {% if form_data.get('weather_cond') == w %}selected{% endif %}>{{ w }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <!-- Weather hints -->
+          <div id="rainHint" class="small mt-2 d-none"></div>
+          <div id="visHint"  class="small mt-1 d-none"></div>
+        </div>
+      </div>
+
+      <!-- Road & Infrastructure -->
+      <div class="card mb-4">
+        <div class="card-header text-white" style="background:linear-gradient(135deg,#374151,#1f2937);">
+          <i class="bi bi-signpost-fill me-2"></i>Road &amp; Infrastructure
+        </div>
+        <div class="card-body p-4">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold small d-flex justify-content-between mb-1">
+                Traffic Volume
+                <span class="text-primary fw-bold" id="tvVal">{{ form_data.get('traffic_volume', 500) }} veh/hr</span>
+              </label>
+              <input type="range" class="form-range" name="traffic_volume"
+                     min="50" max="2000" step="10" value="{{ form_data.get('traffic_volume', 500) }}"
+                     oninput="document.getElementById('tvVal').textContent=this.value+' veh/hr'">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold small">Road Type</label>
+              <select class="form-select form-select-sm" name="road_type">
+                {% for r in road_types %}
+                <option value="{{ r }}" {% if form_data.get('road_type') == r %}selected{% endif %}>{{ r }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold small">Speed Limit</label>
+              <select class="form-select form-select-sm" name="speed_limit">
+                {% for s in [30,50,80,100] %}
+                <option value="{{ s }}" {% if form_data.get('speed_limit','50')|int == s %}selected{% endif %}>{{ s }} km/h</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold small">Prediction Model</label>
+              <div class="d-flex flex-column gap-1 mt-1">
+                <div class="form-check mb-0">
+                  <input class="form-check-input" type="radio" name="model_choice" id="m_rf"
+                         value="Random Forest" {% if form_data.get('model_choice','Random Forest') == 'Random Forest' %}checked{% endif %}>
+                  <label class="form-check-label small" for="m_rf">🌲 Random Forest</label>
+                </div>
+                {% if ann_loaded %}
+                <div class="form-check mb-0">
+                  <input class="form-check-input" type="radio" name="model_choice" id="m_ann"
+                         value="ANN" {% if form_data.get('model_choice') == 'ANN' %}checked{% endif %}>
+                  <label class="form-check-label small" for="m_ann">🧠 ANN (Neural Network)</label>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold small mb-2">Infrastructure Present</label>
+              <div class="d-flex flex-wrap gap-3">
+                {% for label, name in [('Junction','junction'),('Traffic Signal','traffic_signal'),('Pedestrian Crossing','crossing'),('Speed Bump','bump')] %}
+                <div class="form-check form-switch mb-0">
+                  <input class="form-check-input" type="checkbox" name="{{ name }}" id="{{ name }}"
+                         {% if name in form_data %}checked{% elif name == 'traffic_signal' and not form_data %}checked{% endif %}>
+                  <label class="form-check-label small" for="{{ name }}">{{ label }}</label>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold py-3">
+        <i class="bi bi-lightning-charge-fill me-2"></i>PREDICT RISK LEVEL
+      </button>
+
+    </div>
+
+    <!-- ── RIGHT: Result panel ────────────────────────────────────── -->
+    <div class="col-lg-5">
+      <div class="card h-100" style="min-height:520px;">
+        <div class="card-header bg-primary text-white">
+          <i class="bi bi-shield-fill-check me-2"></i>Prediction Result
+        </div>
+        <div class="card-body p-4 d-flex flex-column justify-content-center" id="resultPanel">
+
+          {% if not result %}
+          <!-- Placeholder -->
+          <div class="text-center py-5 text-secondary">
+            <i class="bi bi-arrow-left-circle fs-1 d-block mb-3 opacity-25"></i>
+            <p class="fw-semibold mb-1">No prediction yet</p>
+            <p class="small opacity-75">Fill in the conditions on the left<br>and click <strong>Predict Risk Level</strong>.</p>
+          </div>
+
+          {% else %}
+          <!-- Risk banner -->
+          <div class="rounded-3 text-white text-center p-4 mb-3 result-banner"
+               style="background: {{ result.color }};">
+            <div style="font-size:3rem;line-height:1.1;">
+              {% if result.risk_class == 0 %}🟢{% elif result.risk_class == 1 %}🟡{% else %}🔴{% endif %}
+            </div>
+            <div class="fw-bold mt-1" style="font-size:1.6rem;letter-spacing:-0.02em;">
+              {{ result.risk_label }}
+            </div>
+            <div class="small mt-1 opacity-85">
+              {{ result.model_used }} &nbsp;·&nbsp; Confidence <strong>{{ result.confidence }}%</strong>
+            </div>
+          </div>
+
+          <!-- Probabilities -->
+          <div class="row g-2 mb-3">
+            <div class="col-4 text-center">
+              <div class="card p-2 border-0" style="background:#eff6ff;">
+                <div class="fw-bold text-primary" style="font-size:1.3rem;">{{ result.proba_low }}%</div>
+                <div class="small text-secondary">🟢 Low</div>
+              </div>
+            </div>
+            <div class="col-4 text-center">
+              <div class="card p-2 border-0" style="background:#fffbeb;">
+                <div class="fw-bold text-warning" style="font-size:1.3rem;">{{ result.proba_med }}%</div>
+                <div class="small text-secondary">🟡 Medium</div>
+              </div>
+            </div>
+            <div class="col-4 text-center">
+              <div class="card p-2 border-0" style="background:#fef2f2;">
+                <div class="fw-bold text-danger" style="font-size:1.3rem;">{{ result.proba_high }}%</div>
+                <div class="small text-secondary">🔴 High</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Probability bar -->
+          <div class="mb-3">
+            <div class="small fw-semibold mb-1 text-secondary">Risk Distribution</div>
+            <div class="d-flex rounded-3 overflow-hidden" style="height:14px;">
+              <div style="width:{{ result.proba_low }}%;background:#2563eb;" title="Low {{ result.proba_low }}%"></div>
+              <div style="width:{{ result.proba_med }}%;background:#d97706;" title="Medium {{ result.proba_med }}%"></div>
+              <div style="width:{{ result.proba_high }}%;background:#dc2626;" title="High {{ result.proba_high }}%"></div>
+            </div>
+            <div class="d-flex justify-content-between small text-secondary mt-1">
+              <span>🟢 Low</span><span>🟡 Medium</span><span>🔴 High</span>
+            </div>
+          </div>
+
+          <!-- Recommended action -->
+          {% if result.risk_class == 2 %}
+          <div class="alert alert-danger mb-0">
+            <div class="fw-bold mb-2"><i class="bi bi-exclamation-octagon-fill me-1"></i>HIGH RISK — Immediate Action</div>
+            <ul class="mb-0 small ps-3">
+              <li>Deploy traffic officers immediately</li>
+              <li>Reduce signal cycle times</li>
+              <li>Issue motorist advisory</li>
+              <li>Alert emergency services to stand by</li>
+              <li>Reassess every 15 minutes</li>
+            </ul>
+          </div>
+          {% elif result.risk_class == 1 %}
+          <div class="alert alert-warning mb-0">
+            <div class="fw-bold mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>MEDIUM RISK — Heightened Monitoring</div>
+            <ul class="mb-0 small ps-3">
+              <li>Increase patrol frequency</li>
+              <li>Check signal timing for dead time</li>
+              <li>Monitor weather — may escalate</li>
+              <li>Reassess in 30 minutes</li>
+            </ul>
+          </div>
+          {% else %}
+          <div class="alert alert-success mb-0">
+            <div class="fw-bold mb-2"><i class="bi bi-check-circle-fill me-1"></i>LOW RISK — Normal Operations</div>
+            <ul class="mb-0 small ps-3">
+              <li>Standard monitoring applies</li>
+              <li>No immediate intervention required</li>
+              <li>Continue routine patrols</li>
+            </ul>
+          </div>
+          {% endif %}
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+  </form>
+
+</div>
+
+<script>
+function updateHourHint(v) {
+  v = parseInt(v);
+  const el = document.getElementById('hourHint');
+  if ((v >= 7 && v <= 9) || (v >= 17 && v <= 19)) {
+    el.innerHTML = '<span class="text-warning"><i class="bi bi-exclamation-triangle-fill me-1"></i>Peak traffic hour</span>';
+  } else if (v >= 22 || v <= 5) {
+    el.innerHTML = '<span class="text-warning"><i class="bi bi-moon-fill me-1"></i>Night-time — reduced visibility</span>';
+  } else {
+    el.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Off-peak hours</span>';
+  }
+}
+function updateRainHint(v) {
+  v = parseFloat(v);
+  const el = document.getElementById('rainHint');
+  if (v > 10) {
+    el.innerHTML = '<span class="text-danger"><i class="bi bi-cloud-rain-heavy-fill me-1"></i>Heavy rain — high risk</span>';
+    el.classList.remove('d-none');
+  } else if (v > 2) {
+    el.innerHTML = '<span class="text-warning"><i class="bi bi-cloud-drizzle-fill me-1"></i>Light rain detected</span>';
+    el.classList.remove('d-none');
+  } else { el.classList.add('d-none'); }
+}
+function updateVisHint(v) {
+  v = parseFloat(v);
+  const el = document.getElementById('visHint');
+  if (v < 3) {
+    el.innerHTML = '<span class="text-danger"><i class="bi bi-eye-slash-fill me-1"></i>Poor visibility — high risk</span>';
+    el.classList.remove('d-none');
+  } else { el.classList.add('d-none'); }
+}
+updateHourHint(document.querySelector('[name=hour]').value);
+updateRainHint(document.querySelector('[name=precipitation]').value);
+updateVisHint(document.querySelector('[name=visibility]').value);
+</script>
+
+{% endblock %}

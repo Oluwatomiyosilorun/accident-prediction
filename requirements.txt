@@ -1,4 +1,5 @@
-streamlit
+flask
+gunicorn
 scikit-learn
 onnxruntime
 pandas
@@ -8,3 +9,4 @@ seaborn
 imbalanced-learn
 joblib
 pillow
+plotly
